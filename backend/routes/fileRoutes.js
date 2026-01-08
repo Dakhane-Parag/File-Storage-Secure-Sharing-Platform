@@ -39,4 +39,19 @@ router.post(
   }
 );
 
+router.get("/", authmiddleware,  async (req,res) =>{
+  try {
+    const userId1 = req.user.userId;
+
+    const files = await File.find({owner:userId1}).select("originalName fileSize fileType createdAt").sort({createdAt:-1});
+
+    res.status(200).json({files});
+    
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({message:"Server Error!"});
+    
+  }
+})
+
 export default router;
