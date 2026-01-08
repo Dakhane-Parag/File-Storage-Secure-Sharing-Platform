@@ -1,7 +1,9 @@
 import express from "express";
 import dotenv from "dotenv";
 import dbconnect from "./config/dbconnect.js";
-import authRoutes from "./routes/auth.js"
+import authRoutes from "./routes/auth.js";
+import authmiddleware from "./middlewares/authmiddleware.js";
+import fileRoutes from "./routes/fileRoutes.js";
 
 dotenv.config();
 dbconnect();
@@ -11,13 +13,21 @@ const port = process.env.PORT;
 
 app.use(express.json());
 
-
 app.use("/api/auth/", authRoutes);
 
-app.get('/',(req,res) =>{
+app.get("/", (req, res) => {
   res.send("Backend is running!!");
-})
+});
 
-app.listen(port , () =>{
-  console.log("Server running on the port "+ port);
-})
+app.get("/api/protected", authmiddleware, (req, res) => {
+  res.json({
+    message: "Access granted",
+    user: req.user,
+  });
+});
+
+app.use("/api/files/", fileRoutes);
+
+app.listen(port, () => {
+  console.log("Server running on the port " + port);
+});
