@@ -1,8 +1,10 @@
 import express from "express";
-import authmiddleware from "../routes/authmiddleware.js";
+import authmiddleware from "../middlewares/authmiddleware.js";
 import crypto from "crypto";
 import File from "../models/File.js";
 import ShareLink from "../models/ShareLink.js"; 
+import path from "path";
+import fs from "fs";
 
 
 const router = express.Router();
@@ -42,7 +44,52 @@ router.post("/:fileId",authmiddleware, async(req,res) =>{
   }
 });
 
+router.get("/public/:token",async(req,res) =>{
+  try {
+    const shareLink = await ShareLink.findOne({
+      token:req.params.token,
+      isActive:true
+    }).populate("file");
 
+    if(!shareLink){
+      res.status(404).json({message:"Invalid share link!"});
+    }
+
+    if(shareLink.expiresAt < new Date()){
+      res.status(410).json({message:"ShareLink has expired!"});
+    }
+
+    const filepath = path.resolve("uploads",shareLink.file.storedName);
+
+    if(!fs.existsSync(filepath)){
+      res.status(404).json({message:"File not found!"});
+    }
+    res.download(filepath ,shareLink.file.originalName);
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({message:"Failed to access the shared file!"});
+  }
+});
+
+router.patch("/:token/revoke",authmiddleware,async(req,res) =>{
+  try {
+    const shareLink = await ShareLink.findOne({token:req.params.token});
+    if(!shareLink){
+      res.status(404).json({message:"sharelink not found!!"});
+    }
+    if(shareLink.createdBy.toString() != req.user.userId){
+      res.status(403).json({message:"Access Denied!!"});
+    }
+    shareLink.isActive = false;
+    await shareLink.save();
+
+    res.status(200).json({message:"ShareLink revoked successfully!"});
+
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({message:"Failed to revoke the sharelink!"});
+  }
+})
 
 
 
