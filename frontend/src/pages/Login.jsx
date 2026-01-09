@@ -17,7 +17,7 @@ const Login = () => {
           Welcome Back
         </h1>
         <p className="text-sm text-zinc-400 text-center mt-1">
-          Login to your secure dashboard
+          Login to FileVault
         </p>
 
         <form onSubmit={handleSubmit} className="mt-6 space-y-4">

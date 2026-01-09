@@ -19,7 +19,7 @@ const Register = () => {
       <div className="w-full max-w-md bg-zinc-900 border border-zinc-800 rounded-xl shadow-lg p-6 sm:p-8">
         
         <h1 className="text-2xl font-semibold text-white text-center">
-          Create Account
+          Create Account on FileVault
         </h1>
         <p className="text-sm text-zinc-400 text-center mt-1">
           Secure File Storage Platform
