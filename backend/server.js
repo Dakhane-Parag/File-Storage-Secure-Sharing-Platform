@@ -13,7 +13,6 @@ const port = process.env.PORT;
 
 app.use(express.json());
 
-app.use("/api/auth/", authRoutes);
 
 app.get("/", (req, res) => {
   res.send("Backend is running!!");
@@ -25,6 +24,8 @@ app.get("/api/protected", authmiddleware, (req, res) => {
     user: req.user,
   });
 });
+
+app.use("/api/auth/", authRoutes);
 
 app.use("/api/files/", fileRoutes);
 

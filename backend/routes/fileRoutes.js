@@ -2,6 +2,7 @@ import express from "express";
 import upload from "../middlewares/fileUpload.js";
 import authmiddleware from "../middlewares/authmiddleware.js";
 import File from "../models/File.js";
+import path from "path";
 
 const router = express.Router();
 
@@ -52,6 +53,20 @@ router.get("/", authmiddleware,  async (req,res) =>{
     res.status(500).json({message:"Server Error!"});
     
   }
+});
+
+router.get("/:id",authmiddleware, async(req,res) =>{
+  const file = await File.findById(req.params.id);
+
+  if(!file){
+    return res.status(404).json({message:"File not found!!"});
+  }
+  if(file.owner.toString() !== req.user.userId){
+    return res.status(403).json({message:"Access Denied!"});
+  }
+
+  const filepath = path.resolve("uploads",file.storedName);
+  res.download(filepath,file.originalName);
 })
 
 export default router;
