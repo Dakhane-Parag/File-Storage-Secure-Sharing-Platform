@@ -4,6 +4,7 @@ import dbconnect from "./config/dbconnect.js";
 import authRoutes from "./routes/auth.js";
 import authmiddleware from "./middlewares/authmiddleware.js";
 import fileRoutes from "./routes/fileRoutes.js";
+import shareRoutes from "./routes/shareRoutes.js";
 
 dotenv.config();
 dbconnect();
@@ -28,6 +29,8 @@ app.get("/api/protected", authmiddleware, (req, res) => {
 app.use("/api/auth/", authRoutes);
 
 app.use("/api/files/", fileRoutes);
+
+app.use("/api/share/",shareRoutes);
 
 app.listen(port, () => {
   console.log("Server running on the port " + port);
