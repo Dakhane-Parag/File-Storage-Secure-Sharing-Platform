@@ -101,6 +101,26 @@ const Dashboard = () => {
     }
   };
 
+  const handleRevoke = async (token) => {
+  try {
+    await api.patch(`/api/share/${token}/revoke`);
+
+    toast.success("Share link revoked");
+
+    setSharedLinks((prev) =>
+      prev.map((link) =>
+        link.token === token
+          ? { ...link, isActive: false }
+          : link
+      )
+    );
+  } catch (error) {
+    console.error("Failed to revoke share link", error);
+    toast.error("Failed to revoke share link");
+  }
+};
+
+
   const logout = () => {
     localStorage.removeItem("token");
     navigate("/login");
@@ -126,6 +146,31 @@ const Dashboard = () => {
           </button>
         </div>
       </div>
+      {/* Mobile View Switcher */}
+<div className="md:hidden flex border-b border-zinc-800 bg-zinc-900">
+  <button
+    onClick={() => setActiveView("files")}
+    className={`flex-1 py-2 text-sm text-center ${
+      activeView === "files"
+        ? "text-white border-b-2 border-indigo-500"
+        : "text-zinc-400"
+    }`}
+  >
+    All My Files
+  </button>
+
+  <button
+    onClick={() => setActiveView("shared")}
+    className={`flex-1 py-2 text-sm text-center ${
+      activeView === "shared"
+        ? "text-white border-b-2 border-indigo-500"
+        : "text-zinc-400"
+    }`}
+  >
+    Shared Links
+  </button>
+</div>
+
 
       {/* Sidebar */}
       <aside className="w-64 bg-zinc-900 border-r border-zinc-800 p-4 hidden md:flex flex-col">
@@ -264,6 +309,7 @@ const Dashboard = () => {
                       </span>
                       <div className="flex justify-end">
                         <button
+                          onClick={() => handleRevoke(link.token)}
                           disabled={!link.isActive}
                           className="text-red-400 hover:underline disabled:opacity-50"
                         >
