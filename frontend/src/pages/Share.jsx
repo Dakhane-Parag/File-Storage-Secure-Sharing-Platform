@@ -1,11 +1,31 @@
 import { useParams } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const Share = () => {
   const { token } = useParams();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [ready, setReady] = useState(true);
+  const [fileName, setFileName] = useState("");
+
+  useEffect(() => {
+    const fetchMeta = async () => {
+      try {
+        const res = await fetch(
+          `${import.meta.env.VITE_API_URL}/api/share/public/${token}/meta`
+        );
+
+        if (!res.ok) throw new Error("invalid");
+
+        const data = await res.json();
+        setFileName(data.fileName);
+      } catch {
+        setError("This share link is invalid or expired.");
+      }
+    };
+
+    fetchMeta();
+  }, [token]);
 
   const downloadFile = async () => {
     setLoading(true);
@@ -25,12 +45,19 @@ const Share = () => {
         }
         throw new Error("download_failed");
       }
+      const disposition = response.headers.get("Content-Disposition");
+      let filename = "DOwnloalde";
 
+      if (disposition && disposition.includes("filename=")) {
+        filename = disposition.split("filename=")[1].replace(/"/g, "").trim();
+      }
       const blob = await response.blob();
 
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
       link.click();
       link.remove();
       window.URL.revokeObjectURL(url);
@@ -61,8 +88,8 @@ const Share = () => {
           <div className="text-sm text-red-400 mb-6">{error}</div>
         ) : (
           <div className="space-y-4">
-            <div className="text-xs text-zinc-500 break-all">
-              Token: {token}
+            <div className="text-sm text-zinc-300 mb-4">
+              📄 <span className="font-medium">{fileName}</span>
             </div>
 
             <button
