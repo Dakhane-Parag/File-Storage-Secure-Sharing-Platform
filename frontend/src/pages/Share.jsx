@@ -46,7 +46,7 @@ const Share = () => {
         throw new Error("download_failed");
       }
       const disposition = response.headers.get("Content-Disposition");
-      let filename = "DOwnloalde";
+      let filename = "New-Download";
 
       if (disposition && disposition.includes("filename=")) {
         filename = disposition.split("filename=")[1].replace(/"/g, "").trim();
@@ -65,7 +65,7 @@ const Share = () => {
       console.error(err);
 
       if (err.message === "invalid_or_expired") {
-        setError("This share link is invalid or has expired.1");
+        setError("This share link is invalid or has expired.");
       } else {
         setError("Failed to download file. Please try again.");
       }
