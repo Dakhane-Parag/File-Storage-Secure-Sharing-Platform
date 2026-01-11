@@ -33,8 +33,8 @@ router.post("/:fileId",authmiddleware, async(req,res) =>{
     });
 
     res.status(201).json({
+      shareUrl:`/share/${token}`,
       message: "Share link created",
-      shareUrl: `/share/${token}`,
       expiresAt,
     });
 
@@ -46,23 +46,23 @@ router.post("/:fileId",authmiddleware, async(req,res) =>{
 
 router.get("/public/:token",async(req,res) =>{
   try {
-    const shareLink = await ShareLink.findOne({
+    const shareLink = await ShareLink.find({
       token:req.params.token,
       isActive:true
     }).populate("file");
 
     if(!shareLink){
-      res.status(404).json({message:"Invalid share link!"});
+      return res.status(404).json({message:"Invalid share link!"});
     }
 
     if(shareLink.expiresAt < new Date()){
-      res.status(410).json({message:"ShareLink has expired!"});
+      return res.status(410).json({message:"ShareLink has expired!"});
     }
 
     const filepath = path.resolve("uploads",shareLink.file.storedName);
 
     if(!fs.existsSync(filepath)){
-      res.status(404).json({message:"File not found!"});
+      return res.status(404).json({message:"File not found!"});
     }
     res.download(filepath ,shareLink.file.originalName);
   } catch (error) {

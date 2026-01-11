@@ -5,12 +5,22 @@ import authRoutes from "./routes/auth.js";
 import authmiddleware from "./middlewares/authmiddleware.js";
 import fileRoutes from "./routes/fileRoutes.js";
 import shareRoutes from "./routes/shareRoutes.js";
+import cors from "cors";
 
 dotenv.config();
 dbconnect();
 
 const app = express();
 const port = process.env.PORT;
+
+
+app.use(cors({
+  origin: "http://localhost:5173",
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+}));
+
+
 
 app.use(express.json());
 

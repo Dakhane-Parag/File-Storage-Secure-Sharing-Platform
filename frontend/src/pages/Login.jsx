@@ -1,18 +1,38 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { loginUser } from "../services/auth";
+import toast from "react-hot-toast";
 
 const Login = () => {
+  const navigate = useNavigate();
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Login submitted");
+    setError("");
+
+    try {
+      const res = await loginUser({ email, password });
+
+      const token = res.data.token;
+      localStorage.setItem("token", token);
+
+      toast.success("Login successful");
+      navigate("/dashboard");
+    } catch (err) {
+      const message = err.response?.data?.message || "Login failed!!";
+      setError(message);
+      toast.error(message);
+    }
   };
 
   return (
     <div className="min-h-screen bg-zinc-950 flex items-center justify-center px-4">
       <div className="w-full max-w-md bg-zinc-900 border border-zinc-800 rounded-xl shadow-lg p-6 sm:p-8">
+
         <h1 className="text-2xl font-semibold text-white text-center">
           Welcome Back
         </h1>
@@ -20,9 +40,17 @@ const Login = () => {
           Login to FileVault
         </p>
 
+        {error && (
+          <div className="mt-4 bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-md p-2">
+            {error}
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="mt-6 space-y-4">
           <div>
-            <label className="block text-sm text-zinc-400 mb-1">Email</label>
+            <label className="block text-sm text-zinc-400 mb-1">
+              Email
+            </label>
             <input
               type="email"
               value={email}
