@@ -8,6 +8,27 @@ import fs from "fs";
 
 const router = express.Router();
 
+router.get("/mysharedlinks", authmiddleware, async (req, res) => {
+  try {
+    const shareLinks = await ShareLink.find({
+      createdBy: req.user.userId,
+    })
+      .populate("file", "originalName fileType fileSize")
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({
+      count: shareLinks.length,
+      shareLinks,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      message: "Failed to fetch shared links",
+    });
+  }
+});
+
+
 router.post("/:fileId", authmiddleware, async (req, res) => {
   try {
     const file = await File.findById(req.params.fileId);
@@ -119,6 +140,7 @@ router.get("/public/:token/meta", async (req, res) => {
     res.status(500).json({ message: "Failed to fetch metadata" });
   }
 });
+
 
 
 export default router;

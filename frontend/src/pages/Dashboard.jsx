@@ -9,6 +9,17 @@ const Dashboard = () => {
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedFile, setSelectedFile] = useState(null);
+  const [sharedLinks, setSharedLinks] = useState([]);
+  const [activeView, setActiveView] = useState("files"); 
+
+  const fetchSharedLinks = async () => {
+    try {
+      const res = await api.get("/api/share/mysharedlinks");
+      setSharedLinks(res.data.shareLinks || []);
+    } catch (error) {
+      console.error("Failed to fetch shared links", error);
+    }
+  };
 
   const fetchFiles = async () => {
     try {
@@ -23,6 +34,7 @@ const Dashboard = () => {
 
   useEffect(() => {
     fetchFiles();
+    fetchSharedLinks();
   }, []);
 
   const uploadFiles = async () => {
@@ -64,34 +76,30 @@ const Dashboard = () => {
     }
   };
 
- const handleShare = async (fileId) => {
-  try {
-    const res = await api.post(`/api/share/${fileId}`);
-    // const token = res.data?.token;
-    const expiresAt = res.data?.expiresAt;
-    const shareUrl = res.data?.shareUrl;
-    if (!shareUrl) {
-      throw new Error("Share token not received from server");
-    }
+  const handleShare = async (fileId) => {
+    try {
+      const res = await api.post(`/api/share/${fileId}`);
+      const expiresAt = res.data?.expiresAt;
+      const shareUrl = res.data?.shareUrl;
 
-    const shareUrlm = `${window.location.origin}${shareUrl}`;
-
-    await navigator.clipboard.writeText(shareUrlm);
-
-    toast.success(
-      `Share link copied! Expires on ${new Date(expiresAt).toLocaleString()}`,
-      {
-        duration: 4000,
+      if (!shareUrl) {
+        throw new Error("Share token not received from server");
       }
-    );
-  } catch (error) {
-    console.error("Failed to create share link", error);
 
-    toast.error("Failed to create share link. Please try again.");
-  }
-};
+      const fullUrl = `${window.location.origin}${shareUrl}`;
+      await navigator.clipboard.writeText(fullUrl);
 
+      toast.success(
+        `Share link copied! Expires on ${new Date(expiresAt).toLocaleString()}`,
+        { duration: 4000 }
+      );
 
+      fetchSharedLinks();
+    } catch (error) {
+      console.error("Failed to create share link", error);
+      toast.error("Failed to create share link. Please try again.");
+    }
+  };
 
   const logout = () => {
     localStorage.removeItem("token");
@@ -112,7 +120,7 @@ const Dashboard = () => {
           </button>
           <button
             onClick={logout}
-            className="border border-zinc-700 px-3 py-1.5 rounded-md text-sm cursor-pointer"
+            className="border border-zinc-700 px-3 py-1.5 rounded-md text-sm"
           >
             Logout
           </button>
@@ -122,16 +130,38 @@ const Dashboard = () => {
       {/* Sidebar */}
       <aside className="w-64 bg-zinc-900 border-r border-zinc-800 p-4 hidden md:flex flex-col">
         <h1 className="text-lg font-semibold mb-6">Welcome to FileVault</h1>
+
         <button
           onClick={() => setOpen(true)}
           className="bg-indigo-600 hover:bg-indigo-500 rounded-md py-2 text-sm mb-6"
         >
           + New
         </button>
-        <nav className="space-y-3 text-sm text-zinc-400 flex-1">
-          <div className="text-white">My Files</div>
-          <div className="hover:text-white cursor-pointer">Shared</div>
+
+        <nav className="space-y-3 text-sm flex-1">
+          <div
+            onClick={() => setActiveView("files")}
+            className={`cursor-pointer ${
+              activeView === "files"
+                ? "text-white"
+                : "text-zinc-400 hover:text-white"
+            }`}
+          >
+            All My Files
+          </div>
+
+          <div
+            onClick={() => setActiveView("shared")}
+            className={`cursor-pointer ${
+              activeView === "shared"
+                ? "text-white"
+                : "text-zinc-400 hover:text-white"
+            }`}
+          >
+            Shared Links
+          </div>
         </nav>
+
         <button
           onClick={logout}
           className="mt-6 border border-zinc-700 hover:border-zinc-500 rounded-md py-2 text-sm"
@@ -143,55 +173,109 @@ const Dashboard = () => {
       {/* Main */}
       <div className="flex-1 overflow-hidden">
         <main className="h-full p-4 sm:p-6 overflow-auto">
-          <div className="bg-zinc-900 border border-zinc-800 rounded-lg overflow-x-auto">
-            <div className="min-w-150">
-              <div className="grid grid-cols-4 text-xs text-zinc-400 px-4 py-3 border-b border-zinc-800">
-                <span>Name</span>
-                <span>Type</span>
-                <span>Size</span>
-                <span className="text-right">Actions</span>
-              </div>
+          {/* MY FILES VIEW */}
+          {activeView === "files" && (
+            <div className="bg-zinc-900 border border-zinc-800 rounded-lg overflow-x-auto">
+              <div className="min-w-150">
+                <div className="grid grid-cols-4 text-xs text-zinc-400 px-4 py-3 border-b border-zinc-800">
+                  <span>Name</span>
+                  <span>Type</span>
+                  <span>Size</span>
+                  <span className="text-right">Actions</span>
+                </div>
 
-              {loading ? (
-                <div className="px-4 py-6 text-sm text-zinc-400">
-                  Loading files...
-                </div>
-              ) : files.length === 0 ? (
-                <div className="px-4 py-6 text-sm text-zinc-400">
-                  No files uploaded yet.
-                </div>
-              ) : (
-                files.map((file) => (
-                  <div
-                    key={file._id}
-                    className="grid grid-cols-4 px-4 py-3 text-sm border-b border-zinc-800 items-center"
-                  >
-                    <span className="truncate">{file.originalName}</span>
-                    <span className="text-zinc-400">{file.fileType}</span>
-                    <span className="text-zinc-400">
-                      {(file.fileSize / 1024).toFixed(1)} KB
-                    </span>
-                    <div className="flex justify-end gap-4">
-                      <button
-                        onClick={() =>
-                          handleDownload(file._id, file.originalName)
-                        }
-                        className="text-indigo-400 hover:underline"
-                      >
-                        Download
-                      </button>
-                      <button
-                        onClick={() => handleShare(file._id)}
-                        className="text-emerald-400 hover:underline"
-                      >
-                        Share
-                      </button>
-                    </div>
+                {loading ? (
+                  <div className="px-4 py-6 text-sm text-zinc-400">
+                    Loading files...
                   </div>
-                ))
-              )}
+                ) : files.length === 0 ? (
+                  <div className="px-4 py-6 text-sm text-zinc-400">
+                    No files uploaded yet.
+                  </div>
+                ) : (
+                  files.map((file) => (
+                    <div
+                      key={file._id}
+                      className="grid grid-cols-4 px-4 py-3 text-sm border-b border-zinc-800 items-center"
+                    >
+                      <span className="truncate">{file.originalName}</span>
+                      <span className="text-zinc-400">{file.fileType}</span>
+                      <span className="text-zinc-400">
+                        {(file.fileSize / 1024).toFixed(1)} KB
+                      </span>
+                      <div className="flex justify-end gap-4">
+                        <button
+                          onClick={() =>
+                            handleDownload(file._id, file.originalName)
+                          }
+                          className="text-indigo-400 hover:underline"
+                        >
+                          Download
+                        </button>
+                        <button
+                          onClick={() => handleShare(file._id)}
+                          className="text-emerald-400 hover:underline"
+                        >
+                          Share
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
-          </div>
+          )}
+
+          {/* SHARED LINKS VIEW */}
+          {activeView === "shared" && (
+            <div className="bg-zinc-900 border border-zinc-800 rounded-lg overflow-x-auto">
+              <div className="min-w-150">
+                <div className="grid grid-cols-4 text-xs text-zinc-400 px-4 py-3 border-b border-zinc-800">
+                  <span>File</span>
+                  <span>Expires</span>
+                  <span>Status</span>
+                  <span className="text-right">Action</span>
+                </div>
+
+                {sharedLinks.length === 0 ? (
+                  <div className="px-4 py-6 text-sm text-zinc-400">
+                    No shared links created yet.
+                  </div>
+                ) : (
+                  sharedLinks.map((link) => (
+                    <div
+                      key={link._id}
+                      className="grid grid-cols-4 px-4 py-3 text-sm border-b border-zinc-800 items-center"
+                    >
+                      <span className="truncate">
+                        {link.file?.originalName || "Unknown file"}
+                      </span>
+                      <span className="text-zinc-400">
+                        {new Date(link.expiresAt).toLocaleString()}
+                      </span>
+                      <span
+                        className={`text-xs ${
+                          link.isActive
+                            ? "text-emerald-400"
+                            : "text-red-400"
+                        }`}
+                      >
+                        {link.isActive ? "Active" : "Revoked"}
+                      </span>
+                      <div className="flex justify-end">
+                        <button
+                          disabled={!link.isActive}
+                          className="text-red-400 hover:underline disabled:opacity-50"
+                        >
+                          Revoke
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
         </main>
       </div>
 
